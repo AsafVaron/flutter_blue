@@ -67,7 +67,6 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
     private static final String TAG = "FlutterBluePlugin";
     private static FlutterBluePlugin instance;
     private Object initializationLock = new Object();
-    private Context context;
     private MethodChannel channel;
     private static final String NAMESPACE = "plugins.pauldemarco.com/flutter_blue";
 
@@ -174,7 +173,6 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
 
     private void tearDown() {
         Log.i(TAG, "teardown");
-        context = null;
         activityBinding.removeRequestPermissionsResultListener(this);
         activityBinding = null;
         channel.setMethodCallHandler(null);
