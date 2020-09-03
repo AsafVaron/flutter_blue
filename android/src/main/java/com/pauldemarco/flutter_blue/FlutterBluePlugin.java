@@ -57,13 +57,13 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
-import io.flutter.plugin.common.PluginRegistry.RequestPermissionsResultListener;
-
 
 /**
  * FlutterBluePlugin
  */
-public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCallHandler, RequestPermissionsResultListener {
+public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCallHandler,
+        PluginRegistry.RequestPermissionsResultListener, PluginRegistry.ActivityResultListener {
+
     private static final String TAG = "FlutterBluePlugin";
     private static FlutterBluePlugin instance;
     private Object initializationLock = new Object();
@@ -80,6 +80,8 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
     private Activity activity;
 
     private static final int REQUEST_FINE_LOCATION_PERMISSIONS = 1452;
+    private static final int REQUEST_BLUETOOTH = 7338;
+
     static final private UUID CCCD_ID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
     private final Map<String, BluetoothDeviceCache> mDevices = new HashMap<>();
     private LogLevel logLevel = LogLevel.EMERGENCY;
@@ -235,6 +237,19 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
             case "isOn": {
                 result.success(mBluetoothAdapter.isEnabled());
                 break;
+            }
+
+            case "turnServicesOn": {
+                new GpsUtils(activity).turnGPSOn(new GpsUtils.onGpsListener() {
+                    @Override
+                    public void gpsStatus(boolean isGPSEnable) {
+                        Log.d(TAG, "gpsStatus: " + isGPSEnable);
+                    }
+                });
+                if (!mBluetoothAdapter.isEnabled()) {
+                    Intent enableBT = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    activity.startActivityForResult(enableBT, REQUEST_BLUETOOTH);
+                }
             }
 
             case "startScan": {
@@ -1019,6 +1034,30 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
             this.gatt = gatt;
             mtu = 20;
         }
+    }
+
+    public boolean onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case REQUEST_BLUETOOTH: {
+                if (resultCode == Activity.RESULT_OK) {
+                    Log.i(TAG, "REQUEST_BLUETOOTH - Bluetooth Enabled");
+                    pendingResult.success(true);
+                } else {
+                    pendingResult.error("error_bluetooth_disabled", "Bluetooth is disabled", null);
+                }
+                return true;
+            }
+            case GpsUtils.GPS_REQUEST: {
+                if (new GpsUtils(activity).isGpsEnabled()) {
+                    Log.i(TAG, "REQUEST_BLUETOOTH - GPS Enabled");
+                    pendingResult.success(true);
+                } else {
+                    pendingResult.error("error_no_gps", "Gps need to be turned on to scan BT devices", null);
+                }
+                return true;
+            }
+        }
+        return false;
     }
 
 }
