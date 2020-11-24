@@ -37,6 +37,7 @@ import androidx.core.content.ContextCompat;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -355,6 +356,7 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
                         gattServer.close();
                     }
                 }
+                unpairDevice(device);
                 result.success(null);
                 break;
             }
@@ -648,6 +650,16 @@ public class FlutterBluePlugin implements FlutterPlugin, ActivityAware, MethodCa
                 result.notImplemented();
                 break;
             }
+        }
+    }
+
+    private void unpairDevice(BluetoothDevice device) {
+        try {
+            Method m = device.getClass()
+                    .getMethod("removeBond", (Class[]) null);
+            m.invoke(device, (Object[]) null);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
         }
     }
 
